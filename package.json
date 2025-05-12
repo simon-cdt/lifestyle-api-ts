@@ -1,0 +1,32 @@
+{
+  "name": "lifestyle-api-ts",
+  "version": "1.0.0",
+  "description": "okey",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "ts-node-dev src/index.ts"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simon-cdt/lifestyle-api-ts.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/simon-cdt/lifestyle-api-ts/issues"
+  },
+  "homepage": "https://github.com/simon-cdt/lifestyle-api-ts#readme",
+  "dependencies": {
+    "@prisma/client": "^6.7.0",
+    "@types/express": "^5.0.1",
+    "argon2": "^0.43.0",
+    "date-fns": "^4.1.0",
+    "express": "^5.1.0",
+    "prisma": "^6.7.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.8.3"
+  }
+}

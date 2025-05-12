@@ -1,0 +1,170 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String   @unique
+  password      String
+  birthDate     String?
+  phoneNumber   String   @unique
+  role          Role     @default(CLIENT)
+  isBlackListed Boolean  @default(false)
+  pushToken     String?
+  createdAt     DateTime @default(now())
+
+  Appointment Appointment[]
+  Barber      Barber?
+}
+
+model Service {
+  id           String   @id @default(cuid())
+  type         String
+  price        Float
+  studentPrice Float
+  duration     Int
+  show         Boolean  @default(true)
+  createdAt    DateTime @default(now())
+
+  Appointment Appointment[]
+}
+
+model Salon {
+  id                   String   @id @default(cuid())
+  name                 String   @unique
+  address              String
+  phoneNumber          String   @unique
+  city                 String
+  imgUrl               String
+  isOpenMonday         Boolean  @default(false)
+  isOpenTuesday        Boolean  @default(false)
+  isOpenWednesday      Boolean  @default(false)
+  isOpenThursday       Boolean  @default(false)
+  isOpenFriday         Boolean  @default(false)
+  isOpenSaturday       Boolean  @default(false)
+  isOpenSunday         Boolean  @default(false)
+  mondayOpeningTime    String
+  mondayClosingTime    String
+  tuesdayOpeningTime   String
+  tuesdayClosingTime   String
+  wednesdayOpeningTime String
+  wednesdayClosingTime String
+  thursdayOpeningTime  String
+  thursdayClosingTime  String
+  fridayOpeningTime    String
+  fridayClosingTime    String
+  saturdayOpeningTime  String
+  saturdayClosingTime  String
+  sundayOpeningTime    String
+  sundayClosingTime    String
+  createdAt            DateTime @default(now())
+
+  Barber        Barber[]
+  SalonBreaks   SalonBreaks[]
+  SalonClosures SalonClosures[]
+}
+
+model SalonClosures {
+  id        String   @id @default(cuid())
+  salonId   String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+
+  Salon Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
+}
+
+model SalonBreaks {
+  id        String   @id @default(cuid())
+  salonId   String
+  breakDate DateTime
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+
+  Salon Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
+}
+
+model Guest {
+  id          String   @id @default(cuid())
+  name        String
+  phoneNumber String
+  createdAt   DateTime @default(now())
+
+  Appointment Appointment[]
+}
+
+model Appointment {
+  id        String   @id @default(cuid())
+  clientId  String?
+  guestId   String?
+  barberId  String
+  serviceId String
+  date      DateTime
+  startTime String
+  endTime   String
+  show      Boolean  @default(true)
+
+  client  User?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  guest   Guest?  @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  barber  Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+}
+
+model Barber {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  salonId            String
+  imgUrl             String
+  pseudo             String
+  instagram          String
+  snapchat           String
+  isWorkingMonday    Boolean  @default(true)
+  isWorkingTuesday   Boolean  @default(true)
+  isWorkingWednesday Boolean  @default(true)
+  isWorkingThursday  Boolean  @default(true)
+  isWorkingFriday    Boolean  @default(true)
+  isWorkingSaturday  Boolean  @default(true)
+  isWorkingSunday    Boolean  @default(true)
+  createdAt          DateTime @default(now())
+
+  Salon          Salon            @relation(fields: [salonId], references: [id], onDelete: Cascade)
+  User           User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  Appointment    Appointment[]
+  BarberBreakks  BarberBreaks[]
+  BarberAbsences BarberAbsences[]
+}
+
+model BarberBreaks {
+  id        String   @id @default(cuid())
+  barberId  String
+  breakDate DateTime
+  startTime String
+  endTime   String
+  createdAt DateTime @default(now())
+
+  Barber Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+}
+
+model BarberAbsences {
+  id        String   @id @default(cuid())
+  barberId  String
+  startDate DateTime
+  endDate   DateTime
+  createdAt DateTime @default(now())
+
+  Barber Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  CLIENT
+  BARBER
+  ADMIN
+}
