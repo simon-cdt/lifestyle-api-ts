@@ -1,9 +1,8 @@
 import { Router, Request, Response } from "express";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "../lib/prisma";
 import { format } from "date-fns";
 
 const router = Router();
-const prisma = new PrismaClient();
 
 type BarberAvailability = {
   barber: {

@@ -110,12 +110,14 @@ model Appointment {
   date      DateTime
   startTime String
   endTime   String
-  show      Boolean  @default(true)
 
   client  User?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   guest   Guest?  @relation(fields: [guestId], references: [id], onDelete: Cascade)
   barber  Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([barberId, date, startTime])
+  @@unique([barberId, date, endTime])
 }
 
 model Barber {
