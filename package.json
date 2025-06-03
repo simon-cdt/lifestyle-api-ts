@@ -21,12 +21,17 @@
   "homepage": "https://github.com/simon-cdt/lifestyle-api-ts#readme",
   "dependencies": {
     "@prisma/client": "^6.7.0",
+    "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.1",
-    "argon2": "^0.43.0",
+    "bcrypt": "^6.0.0",
     "date-fns": "^4.1.0",
     "express": "^5.1.0",
+    "multer": "^2.0.1",
     "prisma": "^6.7.0",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@types/multer": "^1.4.12"
   }
 }

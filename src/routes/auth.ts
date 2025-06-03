@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../lib/prisma";
-import * as argon2 from "argon2";
+import { compare, hash } from "bcrypt";
 
 const router = Router();
 
@@ -32,7 +32,7 @@ router.post("/login", async (req: Request, res: Response) => {
       return;
     }
 
-    if (!(await argon2.verify(existingUser.password, password))) {
+    if (!(await compare(password, existingUser.password))) {
       res.json({
         success: false,
         message: "Le mot de passe est incorrect.",
@@ -89,7 +89,7 @@ router.post("/register", async (req: Request, res: Response) => {
       return;
     }
 
-    const hashedPassword = await argon2.hash(password);
+    const hashedPassword = await hash(password, 10);
 
     const user = await prisma.user.create({
       data: {
@@ -206,7 +206,7 @@ router.put("/update-password", async (req: Request, res: Response) => {
       return;
     }
 
-    if (!(await argon2.verify(user?.password, currentPassword))) {
+    if (!(await compare(currentPassword, user?.password))) {
       res.status(403).json({
         success: false,
         message: "Le mot de passe actuel est incorrect.",
@@ -214,7 +214,7 @@ router.put("/update-password", async (req: Request, res: Response) => {
       return;
     }
 
-    const hashedPassword = await argon2.hash(newPassword);
+    const hashedPassword = await hash(newPassword, 10);
 
     await prisma.user.update({
       where: {
@@ -252,7 +252,7 @@ router.delete("/delete", async (req: Request, res: Response) => {
       },
     });
 
-    if (!user || !(await argon2.verify(user?.password, password))) {
+    if (!user || !(await compare(password, user?.password))) {
       res.status(403).json({
         success: false,
         message: "Le mot de passe est incorrect.",

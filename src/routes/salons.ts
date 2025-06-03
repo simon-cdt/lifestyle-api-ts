@@ -3,9 +3,22 @@ import { prisma } from "../lib/prisma";
 
 const router = Router();
 
-router.get("/", async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
+    const { serviceId } = req.body;
+
     const salons = await prisma.salon.findMany({
+      where: {
+        barbers: {
+          some: {
+            barberServices: {
+              some: {
+                serviceId: serviceId,
+              },
+            },
+          },
+        },
+      },
       select: {
         id: true,
         name: true,
@@ -16,11 +29,15 @@ router.get("/", async (req: Request, res: Response) => {
       },
     });
 
-    res.json({
-      success: true,
-      message: "Les salons ont été récupérés avec succès.",
-      salons,
-    });
+    if (salons.length === 0) {
+      res.json({
+        success: false,
+        message: "Aucun service disponible.",
+      });
+      return;
+    }
+
+    res.json(salons);
   } catch (error) {
     console.error(error);
     res.status(400).json({

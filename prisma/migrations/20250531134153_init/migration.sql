@@ -24,9 +24,19 @@ CREATE TABLE `Service` (
     `price` DOUBLE NOT NULL,
     `studentPrice` DOUBLE NOT NULL,
     `duration` INTEGER NOT NULL,
+    `image` VARCHAR(191) NOT NULL,
     `show` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `Day` (
+    `id` VARCHAR(191) NOT NULL,
+    `day` VARCHAR(191) NOT NULL,
+
+    UNIQUE INDEX `Day_day_key`(`day`),
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
@@ -38,27 +48,6 @@ CREATE TABLE `Salon` (
     `phoneNumber` VARCHAR(191) NOT NULL,
     `city` VARCHAR(191) NOT NULL,
     `imgUrl` VARCHAR(191) NOT NULL,
-    `isOpenMonday` BOOLEAN NOT NULL DEFAULT false,
-    `isOpenTuesday` BOOLEAN NOT NULL DEFAULT false,
-    `isOpenWednesday` BOOLEAN NOT NULL DEFAULT false,
-    `isOpenThursday` BOOLEAN NOT NULL DEFAULT false,
-    `isOpenFriday` BOOLEAN NOT NULL DEFAULT false,
-    `isOpenSaturday` BOOLEAN NOT NULL DEFAULT false,
-    `isOpenSunday` BOOLEAN NOT NULL DEFAULT false,
-    `mondayOpeningTime` VARCHAR(191) NOT NULL,
-    `mondayClosingTime` VARCHAR(191) NOT NULL,
-    `tuesdayOpeningTime` VARCHAR(191) NOT NULL,
-    `tuesdayClosingTime` VARCHAR(191) NOT NULL,
-    `wednesdayOpeningTime` VARCHAR(191) NOT NULL,
-    `wednesdayClosingTime` VARCHAR(191) NOT NULL,
-    `thursdayOpeningTime` VARCHAR(191) NOT NULL,
-    `thursdayClosingTime` VARCHAR(191) NOT NULL,
-    `fridayOpeningTime` VARCHAR(191) NOT NULL,
-    `fridayClosingTime` VARCHAR(191) NOT NULL,
-    `saturdayOpeningTime` VARCHAR(191) NOT NULL,
-    `saturdayClosingTime` VARCHAR(191) NOT NULL,
-    `sundayOpeningTime` VARCHAR(191) NOT NULL,
-    `sundayClosingTime` VARCHAR(191) NOT NULL,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `Salon_name_key`(`name`),
@@ -67,7 +56,19 @@ CREATE TABLE `Salon` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `SalonClosures` (
+CREATE TABLE `SalonDay` (
+    `id` VARCHAR(191) NOT NULL,
+    `salonId` VARCHAR(191) NOT NULL,
+    `dayId` VARCHAR(191) NOT NULL,
+    `openingTime` VARCHAR(191) NOT NULL,
+    `closingTime` VARCHAR(191) NOT NULL,
+    `isOpen` BOOLEAN NOT NULL DEFAULT true,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `SalonClosure` (
     `id` VARCHAR(191) NOT NULL,
     `salonId` VARCHAR(191) NOT NULL,
     `startDate` DATETIME(3) NOT NULL,
@@ -78,7 +79,7 @@ CREATE TABLE `SalonClosures` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `SalonBreaks` (
+CREATE TABLE `SalonBreak` (
     `id` VARCHAR(191) NOT NULL,
     `salonId` VARCHAR(191) NOT NULL,
     `breakDate` DATETIME(3) NOT NULL,
@@ -124,13 +125,6 @@ CREATE TABLE `Barber` (
     `pseudo` VARCHAR(191) NOT NULL,
     `instagram` VARCHAR(191) NOT NULL,
     `snapchat` VARCHAR(191) NOT NULL,
-    `isWorkingMonday` BOOLEAN NOT NULL DEFAULT true,
-    `isWorkingTuesday` BOOLEAN NOT NULL DEFAULT true,
-    `isWorkingWednesday` BOOLEAN NOT NULL DEFAULT true,
-    `isWorkingThursday` BOOLEAN NOT NULL DEFAULT true,
-    `isWorkingFriday` BOOLEAN NOT NULL DEFAULT true,
-    `isWorkingSaturday` BOOLEAN NOT NULL DEFAULT true,
-    `isWorkingSunday` BOOLEAN NOT NULL DEFAULT true,
     `createdAt` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
 
     UNIQUE INDEX `Barber_userId_key`(`userId`),
@@ -138,7 +132,17 @@ CREATE TABLE `Barber` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `BarberBreaks` (
+CREATE TABLE `BarberDay` (
+    `id` VARCHAR(191) NOT NULL,
+    `barberId` VARCHAR(191) NOT NULL,
+    `dayId` VARCHAR(191) NOT NULL,
+    `isWorking` BOOLEAN NOT NULL DEFAULT false,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- CreateTable
+CREATE TABLE `BarberBreak` (
     `id` VARCHAR(191) NOT NULL,
     `barberId` VARCHAR(191) NOT NULL,
     `breakDate` DATETIME(3) NOT NULL,
@@ -150,7 +154,7 @@ CREATE TABLE `BarberBreaks` (
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- CreateTable
-CREATE TABLE `BarberAbsences` (
+CREATE TABLE `BarberAbsence` (
     `id` VARCHAR(191) NOT NULL,
     `barberId` VARCHAR(191) NOT NULL,
     `startDate` DATETIME(3) NOT NULL,
@@ -160,11 +164,28 @@ CREATE TABLE `BarberAbsences` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
--- AddForeignKey
-ALTER TABLE `SalonClosures` ADD CONSTRAINT `SalonClosures_salonId_fkey` FOREIGN KEY (`salonId`) REFERENCES `Salon`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+-- CreateTable
+CREATE TABLE `BarberService` (
+    `id` VARCHAR(191) NOT NULL,
+    `barberId` VARCHAR(191) NOT NULL,
+    `serviceId` VARCHAR(191) NOT NULL,
+    `customPrice` DOUBLE NULL,
+
+    UNIQUE INDEX `BarberService_barberId_serviceId_key`(`barberId`, `serviceId`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 -- AddForeignKey
-ALTER TABLE `SalonBreaks` ADD CONSTRAINT `SalonBreaks_salonId_fkey` FOREIGN KEY (`salonId`) REFERENCES `Salon`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `SalonDay` ADD CONSTRAINT `SalonDay_salonId_fkey` FOREIGN KEY (`salonId`) REFERENCES `Salon`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `SalonDay` ADD CONSTRAINT `SalonDay_dayId_fkey` FOREIGN KEY (`dayId`) REFERENCES `Day`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `SalonClosure` ADD CONSTRAINT `SalonClosure_salonId_fkey` FOREIGN KEY (`salonId`) REFERENCES `Salon`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `SalonBreak` ADD CONSTRAINT `SalonBreak_salonId_fkey` FOREIGN KEY (`salonId`) REFERENCES `Salon`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE `Appointment` ADD CONSTRAINT `Appointment_clientId_fkey` FOREIGN KEY (`clientId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
@@ -185,7 +206,19 @@ ALTER TABLE `Barber` ADD CONSTRAINT `Barber_salonId_fkey` FOREIGN KEY (`salonId`
 ALTER TABLE `Barber` ADD CONSTRAINT `Barber_userId_fkey` FOREIGN KEY (`userId`) REFERENCES `User`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `BarberBreaks` ADD CONSTRAINT `BarberBreaks_barberId_fkey` FOREIGN KEY (`barberId`) REFERENCES `Barber`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `BarberDay` ADD CONSTRAINT `BarberDay_barberId_fkey` FOREIGN KEY (`barberId`) REFERENCES `Barber`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE `BarberAbsences` ADD CONSTRAINT `BarberAbsences_barberId_fkey` FOREIGN KEY (`barberId`) REFERENCES `Barber`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE `BarberDay` ADD CONSTRAINT `BarberDay_dayId_fkey` FOREIGN KEY (`dayId`) REFERENCES `Day`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `BarberBreak` ADD CONSTRAINT `BarberBreak_barberId_fkey` FOREIGN KEY (`barberId`) REFERENCES `Barber`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `BarberAbsence` ADD CONSTRAINT `BarberAbsence_barberId_fkey` FOREIGN KEY (`barberId`) REFERENCES `Barber`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `BarberService` ADD CONSTRAINT `BarberService_barberId_fkey` FOREIGN KEY (`barberId`) REFERENCES `Barber`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE `BarberService` ADD CONSTRAINT `BarberService_serviceId_fkey` FOREIGN KEY (`serviceId`) REFERENCES `Service`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;
