@@ -8,18 +8,24 @@ router.post("/create-user", async (req: Request, res: Response) => {
     const { clientId, barberId, serviceId, date, startTime, endTime } =
       req.body;
 
+    const newDate = date + "T00:00:00Z";
+
     // vérifie si le barber n'a pas déjà un rendez-vous à cette date et heure
     const existingAppointment = await prisma.appointment.findFirst({
       where: {
         barberId,
         date: {
-          gte: new Date(date),
-          lte: new Date(date),
+          gte: newDate,
+          lte: newDate,
         },
-        startTime: {
-          gte: startTime,
-          lte: endTime,
-        },
+        OR: [
+          {
+            startTime: startTime,
+          },
+          {
+            endTime: endTime,
+          },
+        ],
       },
     });
     if (existingAppointment) {
@@ -29,8 +35,6 @@ router.post("/create-user", async (req: Request, res: Response) => {
       });
       return;
     }
-
-    const newDate = new Date(date);
 
     await prisma.appointment.create({
       data: {
@@ -134,28 +138,71 @@ router.post("/getAllByUserId", async (req: Request, res: Response) => {
         endTime: true,
         service: {
           select: {
+            id: true,
             type: true,
-            price: true,
-            studentPrice: true,
             duration: true,
+            image: true,
           },
         },
         barber: {
           select: {
-            Salon: {
+            id: true,
+            pseudo: true,
+            imgUrl: true,
+            salon: {
               select: {
+                id: true,
                 name: true,
                 city: true,
                 address: true,
                 imgUrl: true,
+                phoneNumber: true,
+              },
+            },
+            barberServices: {
+              select: {
+                serviceId: true,
+                price: true,
+                studentPrice: true,
               },
             },
           },
         },
       },
+      orderBy: {
+        date: "desc",
+      },
     });
 
-    res.json(appointments);
+    const formattedAppointments = appointments.map((appointment) => {
+      const service = appointment.service;
+      const barberService = appointment.barber.barberServices.find(
+        (bs) => bs.serviceId === service.id
+      );
+      return {
+        id: appointment.id,
+        date: appointment.date,
+        startTime: appointment.startTime,
+        endTime: appointment.endTime,
+        serviceId: appointment.service.id,
+        serviceType: appointment.service.type,
+        serviceDuration: appointment.service.duration,
+        serviceImgUrl: appointment.service.image,
+        barberId: appointment.barber.id,
+        barberPseudo: appointment.barber.pseudo,
+        barberImgUrl: appointment.barber.imgUrl,
+        salonId: appointment.barber.salon.id,
+        salonName: appointment.barber.salon.name,
+        salonCity: appointment.barber.salon.city,
+        salonAddress: appointment.barber.salon.address,
+        salonImgUrl: appointment.barber.salon.imgUrl,
+        salonPhoneNumber: appointment.barber.salon.phoneNumber,
+        price: barberService?.price || 0,
+        studentPrice: barberService?.studentPrice || 0,
+      };
+    });
+
+    res.json(formattedAppointments);
   } catch (error) {
     console.error(error);
     res.status(400).json({
@@ -181,7 +228,8 @@ router.post("/getDetailsById", async (req: Request, res: Response) => {
         endTime: true,
         barber: {
           select: {
-            Salon: {
+            pseudo: true,
+            salon: {
               select: {
                 name: true,
                 city: true,
@@ -190,18 +238,35 @@ router.post("/getDetailsById", async (req: Request, res: Response) => {
                 phoneNumber: true,
               },
             },
+            barberServices: {
+              select: {
+                serviceId: true,
+                price: true,
+                studentPrice: true,
+              },
+            },
           },
         },
         service: {
           select: {
+            id: true,
             type: true,
-            price: true,
-            studentPrice: true,
             duration: true,
           },
         },
       },
     });
+
+    if (appointment) {
+      const serviceId = appointment.service.id;
+      const barberService = appointment.barber.barberServices.find(
+        (bs) => bs.serviceId === serviceId
+      );
+      (appointment as any).price = barberService?.price || 0;
+      (appointment as any).studentPrice = barberService?.studentPrice || 0;
+      // Optionally, remove the full barberServices array to avoid confusion
+      delete (appointment as any).barber.barberServices;
+    }
 
     res.json(appointment);
   } catch (error) {

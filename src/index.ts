@@ -18,8 +18,8 @@ app.use("/uploads", uploadsRouter);
 app.use("/auth", authRouter);
 app.use("/services", servicesRouter);
 app.use("/salons", salonsRouter);
-// app.use("/availabilities", availabilitiesRouter);
-// app.use("/appointments", appointmentRouter);
+app.use("/availabilities", availabilitiesRouter);
+app.use("/appointments", appointmentRouter);
 // app.use("/admin", adminRouter);
 
 const PORT = 3000;

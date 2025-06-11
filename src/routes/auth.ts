@@ -16,7 +16,6 @@ router.post("/login", async (req: Request, res: Response) => {
         lastName: true,
         email: true,
         phoneNumber: true,
-        birthDate: true,
         password: true,
         isBlackListed: true,
         role: true,
@@ -27,7 +26,7 @@ router.post("/login", async (req: Request, res: Response) => {
     if (!existingUser) {
       res.json({
         success: false,
-        message: "L'utilisateur n'existe pas.",
+        message: "L'e-mail n'existe pas.",
       });
       return;
     }
@@ -65,8 +64,7 @@ router.post("/login", async (req: Request, res: Response) => {
 
 router.post("/register", async (req: Request, res: Response) => {
   try {
-    const { email, firstName, lastName, password, phoneNumber, birthDate } =
-      req.body;
+    const { email, firstName, lastName, password, phoneNumber } = req.body;
 
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -84,7 +82,7 @@ router.post("/register", async (req: Request, res: Response) => {
     if (existingUser) {
       res.status(400).json({
         success: false,
-        message: "L'email ou le numéro de téléphone est déjà utilisé.",
+        message: "L'e-mail ou le numéro de téléphone est déjà utilisé.",
       });
       return;
     }
@@ -98,7 +96,6 @@ router.post("/register", async (req: Request, res: Response) => {
         lastName,
         password: hashedPassword,
         phoneNumber,
-        birthDate,
       },
       select: {
         id: true,
@@ -106,7 +103,6 @@ router.post("/register", async (req: Request, res: Response) => {
         lastName: true,
         email: true,
         phoneNumber: true,
-        birthDate: true,
         isBlackListed: true,
         role: true,
         pushToken: true,
@@ -129,11 +125,11 @@ router.post("/register", async (req: Request, res: Response) => {
 
 router.put("/update", async (req: Request, res: Response) => {
   try {
-    const { id, firstName, lastName, email, birthDate, phoneNumber } = req.body;
+    const { id, firstName, lastName, email, phoneNumber } = req.body;
 
     const user = await prisma.user.findUnique({
       where: {
-        email,
+        id,
       },
       select: {
         id: true,
@@ -148,6 +144,39 @@ router.put("/update", async (req: Request, res: Response) => {
       return;
     }
 
+    const mailExists = await prisma.user.findFirst({
+      where: {
+        email,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (mailExists && mailExists.id !== id) {
+      res.status(400).json({
+        success: false,
+        message: "L'e-mail est déjà utilisé.",
+      });
+      return;
+    }
+
+    const phoneExists = await prisma.user.findFirst({
+      where: {
+        phoneNumber,
+      },
+      select: {
+        id: true,
+      },
+    });
+    if (phoneExists && phoneExists.id !== id) {
+      res.status(400).json({
+        success: false,
+        message: "Le numéro de téléphone est déjà utilisé.",
+      });
+      return;
+    }
+
     const userUpdate = await prisma.user.update({
       where: {
         id,
@@ -156,7 +185,7 @@ router.put("/update", async (req: Request, res: Response) => {
         firstName,
         lastName,
         phoneNumber,
-        birthDate,
+        email,
       },
       select: {
         id: true,
@@ -164,7 +193,6 @@ router.put("/update", async (req: Request, res: Response) => {
         firstName: true,
         lastName: true,
         phoneNumber: true,
-        birthDate: true,
         isBlackListed: true,
         role: true,
         pushToken: true,

@@ -15,31 +15,38 @@ type BarberAvailability = {
   unavailability: { startTime: string; endTime: string }[];
 };
 
-router.get("/:date/:idSalon", async (req: Request, res: Response) => {
+router.post("/", async (req: Request, res: Response) => {
   try {
-    const salonId = req.params.idSalon;
-    const date = req.params.date;
+    const { salonId, serviceId, date } = req.body;
 
     const dateObj = new Date(date);
     const dayOfWeek = format(dateObj, "EEEE");
 
     // Vérifier si le salon existe
-    const salon = (await prisma.salon.findUnique({
+    const salon = await prisma.salon.findUnique({
       where: { id: salonId },
-    })) as (typeof prisma.salon extends {
-      findUnique: (args: any) => Promise<infer T>;
-    }
-      ? T
-      : never) & {
-      [key: string]: any;
-    };
+      select: {
+        id: true,
+        salonDays: {
+          where: {
+            day: {
+              day: dayOfWeek,
+            },
+          },
+          select: {
+            isOpen: true,
+            openingTime: true,
+            closingTime: true,
+          },
+        },
+      },
+    });
     if (!salon) {
       res.json({ message: "Le salon n'existe pas", available: false });
       return;
     }
 
-    // Vérifier si le salon est fermé à cette date
-    const closures = await prisma.salonClosures.findMany({
+    const closures = await prisma.salonClosure.findMany({
       where: {
         salonId,
         startDate: { lte: dateObj },
@@ -54,18 +61,21 @@ router.get("/:date/:idSalon", async (req: Request, res: Response) => {
       return;
     }
 
-    const isOpenKey = `isOpen${dayOfWeek}` as keyof typeof salon;
-    if (!salon[isOpenKey]) {
-      res.json({ message: "Le salon est fermé ce jour-là", available: false });
-      return;
-    }
+    const salonOpenDay = await prisma.salonDay.findFirst({
+      where: {
+        salonId: salonId,
+        day: {
+          day: dayOfWeek,
+        },
+      },
+      select: {
+        isOpen: true,
+        openingTime: true,
+        closingTime: true,
+      },
+    });
 
-    // Récupérer les horaires d'ouverture et de fermeture
-    const workingFieldSalon = getWorkingField(dayOfWeek, true);
-    const openingTime = salon[`${workingFieldSalon}OpeningTime`];
-    const closingTime = salon[`${workingFieldSalon}ClosingTime`];
-
-    if (!openingTime || !closingTime) {
+    if (!salonOpenDay?.isOpen) {
       res.json({
         message: "Le salon n'est pas ouvert ce jour-là",
         available: false,
@@ -73,12 +83,39 @@ router.get("/:date/:idSalon", async (req: Request, res: Response) => {
       return;
     }
 
-    const workingFieldBarber = getWorkingField(dayOfWeek, false);
-    // Filtrer les barbiers qui travaillent ce jour-là
     const barbers = await prisma.barber.findMany({
       where: {
         salonId,
-        [workingFieldBarber]: true,
+        barberServices: {
+          some: {
+            serviceId,
+          },
+        },
+        barberDays: {
+          some: {
+            isWorking: true,
+            day: {
+              day: dayOfWeek,
+            },
+          },
+        },
+      },
+      select: {
+        id: true,
+        imgUrl: true,
+        pseudo: true,
+        instagram: true,
+        snapchat: true,
+        barberServices: {
+          where: {
+            serviceId,
+          },
+          select: {
+            serviceId: true,
+            price: true,
+            studentPrice: true,
+          },
+        },
       },
     });
 
@@ -90,8 +127,7 @@ router.get("/:date/:idSalon", async (req: Request, res: Response) => {
       return;
     }
 
-    // Vérifier les absences des barbiers
-    const absentBarbers = await prisma.barberAbsences.findMany({
+    const absentBarbers = await prisma.barberAbsence.findMany({
       where: {
         startDate: { lte: dateObj },
         endDate: { gte: dateObj },
@@ -101,7 +137,6 @@ router.get("/:date/:idSalon", async (req: Request, res: Response) => {
     });
     const absentBarberIds = absentBarbers.map((a) => a.barberId);
 
-    // Filtrer les barbiers disponibles (pas absents)
     const availableBarbers = barbers.filter(
       (b) => !absentBarberIds.includes(b.id)
     );
@@ -114,12 +149,10 @@ router.get("/:date/:idSalon", async (req: Request, res: Response) => {
       return;
     }
 
-    // Récupérer les indisponibilités (rendez-vous, pauses des barbers et du salon)
     const barberAvailabilities: BarberAvailability[] = await Promise.all(
       availableBarbers.map(async (barber) => {
         const unavailability: { startTime: string; endTime: string }[] = [];
 
-        // Récupérer les rendez-vous
         const appointments = await prisma.appointment.findMany({
           where: {
             barberId: barber.id,
@@ -135,8 +168,7 @@ router.get("/:date/:idSalon", async (req: Request, res: Response) => {
           });
         });
 
-        // Récupérer les pauses du barbier
-        const barberBreaks = await prisma.barberBreaks.findMany({
+        const barberBreaks = await prisma.barberBreak.findMany({
           where: {
             barberId: barber.id,
             breakDate: dateObj,
@@ -151,8 +183,7 @@ router.get("/:date/:idSalon", async (req: Request, res: Response) => {
           });
         });
 
-        // Récupérer les pauses du salon
-        const salonBreaks = await prisma.salonBreaks.findMany({
+        const salonBreaks = await prisma.salonBreak.findMany({
           where: {
             salonId,
             breakDate: dateObj,
@@ -174,6 +205,8 @@ router.get("/:date/:idSalon", async (req: Request, res: Response) => {
             pseudo: barber.pseudo,
             instagram: barber.instagram,
             snapchat: barber.snapchat,
+            price: barber.barberServices[0]?.price || 0,
+            studentPrice: barber.barberServices[0]?.studentPrice || 0,
           },
           unavailability,
         };
@@ -182,8 +215,8 @@ router.get("/:date/:idSalon", async (req: Request, res: Response) => {
 
     res.json({
       available: true,
-      openingTime,
-      closingTime,
+      openingTime: salon.salonDays[0].openingTime,
+      closingTime: salon.salonDays[0].closingTime,
       barbers: barberAvailabilities,
     });
   } catch (error) {
@@ -191,18 +224,5 @@ router.get("/:date/:idSalon", async (req: Request, res: Response) => {
     res.json({ message: "Une erreur est survenue", available: false });
   }
 });
-
-const getWorkingField = (dayOfWeek: string, salon: boolean): string => {
-  const daysMap: { [key: string]: string } = {
-    Monday: salon ? "monday" : "isWorkingMonday",
-    Tuesday: salon ? "tuesday" : "isWorkingTuesday",
-    Wednesday: salon ? "wednesday" : "isWorkingWednesday",
-    Thursday: salon ? "thursday" : "isWorkingThursday",
-    Friday: salon ? "friday" : "isWorkingFriday",
-    Saturday: salon ? "saturday" : "isWorkingSaturday",
-    Sunday: salon ? "sunday" : "isWorkingSunday",
-  };
-  return daysMap[dayOfWeek] || "";
-};
 
 export default router;
