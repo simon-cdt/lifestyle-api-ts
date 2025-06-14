@@ -7,7 +7,7 @@ import uploadsRouter from "./routes/uploads";
 import salonsRouter from "./routes/salons";
 import availabilitiesRouter from "./routes/availabilities";
 import appointmentRouter from "./routes/appointments";
-import adminRouter from "./routes/admin/index";
+import agendaRouter from "./routes/admin/agenda";
 
 const app = express();
 app.use(express.json());
@@ -20,7 +20,7 @@ app.use("/services", servicesRouter);
 app.use("/salons", salonsRouter);
 app.use("/availabilities", availabilitiesRouter);
 app.use("/appointments", appointmentRouter);
-// app.use("/admin", adminRouter);
+app.use("/admin/agenda", agendaRouter);
 
 const PORT = 3000;
 app.listen(PORT, () => {
