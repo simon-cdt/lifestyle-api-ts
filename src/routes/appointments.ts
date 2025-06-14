@@ -60,69 +60,6 @@ router.post("/create-user", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/create-guest", async (req: Request, res: Response) => {
-  try {
-    const { name, phoneNumber, barberId, serviceId, date, startTime, endTime } =
-      req.body;
-
-    // vérifie si le barber n'a pas déjà un rendez-vous à cette date et heure
-    const existingAppointment = await prisma.appointment.findFirst({
-      where: {
-        barberId,
-        date: {
-          gte: new Date(date),
-          lte: new Date(date),
-        },
-        startTime: {
-          gte: startTime,
-          lte: endTime,
-        },
-      },
-    });
-    if (existingAppointment) {
-      res.json({
-        success: false,
-        message: "Le barbier a déjà un rendez-vous pour ce créneau.",
-      });
-      return;
-    }
-
-    const newGuest = await prisma.guest.create({
-      data: {
-        name,
-        phoneNumber,
-      },
-      select: {
-        id: true,
-      },
-    });
-
-    const newDate = new Date(date);
-
-    await prisma.appointment.create({
-      data: {
-        guestId: newGuest.id,
-        barberId,
-        serviceId,
-        date: newDate,
-        startTime,
-        endTime,
-      },
-    });
-
-    res.json({
-      success: true,
-      message: "Le rendez-vous a été créé avec succès.",
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(400).json({
-      success: false,
-      message: "Une erreur est survenue.",
-    });
-  }
-});
-
 router.post("/getAllByUserId", async (req: Request, res: Response) => {
   try {
     const { userId } = req.body;

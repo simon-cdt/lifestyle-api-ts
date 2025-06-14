@@ -174,6 +174,7 @@ router.post("/", async (req: Request, res: Response) => {
             client: {
               select: { firstName: true },
             },
+            guest: { select: { name: true } },
             service: {
               select: { type: true },
             },
@@ -186,7 +187,7 @@ router.post("/", async (req: Request, res: Response) => {
             endTime: app.endTime,
             appointment: true,
             id: app.id,
-            clientName: app.client?.firstName,
+            clientName: app.client ? app.client.firstName : app.guest?.name,
             serviceType: app.service.type,
           });
         });
@@ -322,6 +323,13 @@ router.post("/info", async (req: Request, res: Response) => {
               phoneNumber: true,
             },
           },
+          guest: {
+            select: {
+              id: true,
+              name: true,
+              phoneNumber: true,
+            },
+          },
           startTime: true,
           endTime: true,
           barber: {
@@ -349,9 +357,18 @@ router.post("/info", async (req: Request, res: Response) => {
           price: barberService?.price || 0,
           studentPrice: barberService?.studentPrice || 0,
           appointment: true,
+          client: {
+            name: appointmentDetail.client
+              ? `${appointmentDetail.client.firstName} ${appointmentDetail.client.lastName}`.trim()
+              : appointmentDetail.guest?.name,
+            email: appointmentDetail.client?.email,
+            phoneNumber:
+              appointmentDetail.client?.phoneNumber ||
+              appointmentDetail.guest?.phoneNumber,
+          },
         };
 
-        const { barber, serviceId, ...rest } = appointmentDetail;
+        const { barber, serviceId, guest, ...rest } = appointmentDetail;
         appointmentDetail = rest;
       }
     } else {
@@ -377,6 +394,194 @@ router.post("/info", async (req: Request, res: Response) => {
     }
 
     res.json({ appointmentDetail, success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.post("/barberServices", async (req: Request, res: Response) => {
+  try {
+    const { barberId, userId } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+    if (!user || user.role === "CLIENT") {
+      res.status(403).json({
+        success: false,
+        message:
+          "Accès refusé. Seul un administrateur peut accéder à cette ressource.",
+      });
+      return;
+    }
+
+    const barberServices = await prisma.service.findMany({
+      where: {
+        barberService: {
+          some: {
+            barberId,
+          },
+        },
+      },
+      select: {
+        id: true,
+        type: true,
+        duration: true,
+      },
+    });
+
+    if (barberServices.length === 0) {
+      res.json({
+        success: false,
+        message: "Aucun service disponible pour ce barbier.",
+      });
+      return;
+    }
+
+    res.json({ services: barberServices, success: true });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.post("/create-guest", async (req: Request, res: Response) => {
+  try {
+    const {
+      name,
+      phoneNumber,
+      barberId,
+      serviceId,
+      date,
+      startTime,
+      endTime,
+      userId,
+    } = req.body;
+
+    const newDate = date + "T00:00:00Z";
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+    if (!user || user.role === "CLIENT") {
+      res.status(403).json({
+        success: false,
+        message:
+          "Accès refusé. Seul un administrateur peut accéder à cette ressource.",
+      });
+      return;
+    }
+
+    // vérifie si le barber n'a pas déjà un rendez-vous à cette date et heure
+    const existingAppointment = await prisma.appointment.findFirst({
+      where: {
+        barberId,
+        date: {
+          gte: newDate,
+          lte: newDate,
+        },
+        OR: [
+          {
+            startTime: startTime,
+          },
+          {
+            endTime: endTime,
+          },
+        ],
+      },
+    });
+    if (existingAppointment) {
+      res.json({
+        success: false,
+        message: "Le barbier a déjà un rendez-vous pour ce créneau.",
+      });
+      return;
+    }
+
+    const newGuest = await prisma.guest.create({
+      data: {
+        name,
+        phoneNumber,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    await prisma.appointment.create({
+      data: {
+        guestId: newGuest.id,
+        barberId,
+        serviceId,
+        date: newDate,
+        startTime,
+        endTime,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Le rendez-vous a été créé avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.post("/create-break", async (req: Request, res: Response) => {
+  try {
+    const { barberId, date, startTime, endTime, userId } = req.body;
+
+    const newDate = date + "T00:00:00Z";
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+    if (!user || user.role === "CLIENT") {
+      res.status(403).json({
+        success: false,
+        message:
+          "Accès refusé. Seul un administrateur peut accéder à cette ressource.",
+      });
+      return;
+    }
+
+    await prisma.barberBreak.create({
+      data: {
+        barberId,
+        breakDate: newDate,
+        startTime,
+        endTime,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "La pause a été créée avec succès.",
+    });
   } catch (error) {
     console.error(error);
     res.status(400).json({
