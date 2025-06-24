@@ -36,6 +36,24 @@ router.post("/create-user", async (req: Request, res: Response) => {
       return;
     }
 
+    const client = await prisma.user.findUnique({
+      where: {
+        id: clientId,
+      },
+      select: {
+        id: true,
+        isBlackListed: true,
+      },
+    });
+
+    if (client?.isBlackListed) {
+      res.status(403).json({
+        success: false,
+        message: "Votre compte est bloqué.",
+      });
+      return;
+    }
+
     await prisma.appointment.create({
       data: {
         clientId,

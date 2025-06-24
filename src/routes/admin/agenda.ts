@@ -1,8 +1,11 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../../lib/prisma";
 import { format } from "date-fns";
+import Expo from "expo-server-sdk";
+import { fr } from "date-fns/locale";
 
 const router = Router();
+const expo = new Expo();
 
 type BarberAvailability = {
   barber: {
@@ -581,6 +584,133 @@ router.post("/create-break", async (req: Request, res: Response) => {
     res.json({
       success: true,
       message: "La pause a été créée avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.delete("/delete-break", async (req: Request, res: Response) => {
+  try {
+    const { id, userId } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+    if (!user || user.role === "CLIENT") {
+      res.status(403).json({
+        success: false,
+        message:
+          "Accès refusé. Seul un administrateur peut accéder à cette ressource.",
+      });
+      return;
+    }
+
+    const breakToDelete = await prisma.barberBreak.findUnique({
+      where: { id },
+    });
+
+    if (!breakToDelete) {
+      res.status(404).json({
+        success: false,
+        message: "Pause introuvable.",
+      });
+      return;
+    }
+
+    await prisma.barberBreak.delete({
+      where: { id },
+    });
+
+    res.json({
+      success: true,
+      message: "La pause a été supprimée avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.delete("/delete-appointment", async (req: Request, res: Response) => {
+  try {
+    const { id, userId } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        role: true,
+      },
+    });
+    if (!user || user.role === "CLIENT") {
+      res.status(403).json({
+        success: false,
+        message:
+          "Accès refusé. Seul un administrateur peut accéder à cette ressource.",
+      });
+      return;
+    }
+
+    const appointmentToDelete = await prisma.appointment.findUnique({
+      where: { id },
+      select: {
+        date: true,
+        startTime: true,
+        endTime: true,
+        client: {
+          select: {
+            pushToken: true,
+            firstName: true,
+          },
+        },
+      },
+    });
+
+    if (!appointmentToDelete) {
+      res.status(404).json({
+        success: false,
+        message: "Rendez-vous introuvable.",
+      });
+      return;
+    }
+
+    await prisma.appointment.delete({
+      where: { id },
+    });
+
+    if (appointmentToDelete.client?.pushToken) {
+      const notification = {
+        to: appointmentToDelete.client.pushToken,
+        sound: "default",
+        title: "Rendez-vous annulé",
+        body: `Bonjour ${
+          appointmentToDelete.client.firstName
+        }, votre rendez-vous prévu le ${format(
+          appointmentToDelete.date,
+          "PPPP",
+          { locale: fr }
+        )} entre ${appointmentToDelete.startTime} et ${
+          appointmentToDelete.endTime
+        } a été annulé.`,
+      };
+      await expo.sendPushNotificationsAsync([notification]);
+    }
+
+    res.json({
+      success: true,
+      message: "Le rendez-vous a été supprimé avec succès.",
     });
   } catch (error) {
     console.error(error);

@@ -26,7 +26,7 @@ router.post("/login", async (req: Request, res: Response) => {
     if (!existingUser) {
       res.json({
         success: false,
-        message: "L'e-mail n'existe pas.",
+        message: "L'utilisateur n'existe pas.",
       });
       return;
     }
@@ -64,7 +64,8 @@ router.post("/login", async (req: Request, res: Response) => {
 
 router.post("/register", async (req: Request, res: Response) => {
   try {
-    const { email, firstName, lastName, password, phoneNumber } = req.body;
+    const { email, firstName, lastName, password, phoneNumber, expoPushToken } =
+      req.body;
 
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -96,6 +97,7 @@ router.post("/register", async (req: Request, res: Response) => {
         lastName,
         password: hashedPassword,
         phoneNumber,
+        pushToken: expoPushToken,
       },
       select: {
         id: true,
