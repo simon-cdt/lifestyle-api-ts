@@ -16,6 +16,10 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 app.use("/uploads", uploadsRouter);
 
+app.get("/", (req, res) => {
+  res.send("Welcome to the API");
+});
+
 app.use("/auth", authRouter);
 app.use("/services", servicesRouter);
 app.use("/salons", salonsRouter);
@@ -24,7 +28,8 @@ app.use("/appointments", appointmentRouter);
 app.use("/admin/agenda", agendaRouter);
 app.use("/admin/notifications", notificationsRouter);
 
-const PORT = 3000;
+
+const PORT = process.env.PORT || 4001;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`http://localhost:${PORT}`);
 });
