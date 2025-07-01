@@ -17,7 +17,7 @@ app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 app.use("/uploads", uploadsRouter);
 
 app.get("/", (req, res) => {
-  res.send("Welcome to the API");
+  res.json({"message": "Bienvenue sur l'API de Lifestyle Barber"});
 });
 
 app.use("/auth", authRouter);

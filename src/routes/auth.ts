@@ -67,23 +67,35 @@ router.post("/register", async (req: Request, res: Response) => {
     const { email, firstName, lastName, password, phoneNumber, expoPushToken } =
       req.body;
 
-    const existingUser = await prisma.user.findFirst({
+    const existingUserEmail = await prisma.user.findFirst({
       where: {
-        OR: [
-          {
-            email: email,
-          },
-          {
-            phoneNumber: phoneNumber,
-          },
-        ],
+        email,
+      },
+      select: {
+        id: true,
       },
     });
 
-    if (existingUser) {
+    if (existingUserEmail) {
       res.status(400).json({
         success: false,
-        message: "L'e-mail ou le numéro de téléphone est déjà utilisé.",
+        message: "L'e-mail est déjà utilisé.",
+      });
+      return;
+    }
+
+    const existingUserPhone = await prisma.user.findFirst({
+      where: {
+        phoneNumber,
+      },
+      select: {
+        id: true,
+      },
+    });
+    if (existingUserPhone) {
+      res.status(400).json({
+        success: false,
+        message: "Le numéro de téléphone est déjà utilisé.",
       });
       return;
     }

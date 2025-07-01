@@ -17,7 +17,6 @@ model User {
   role          Role     @default(CLIENT)
   isBlackListed Boolean  @default(false)
   pushToken     String?
-  createdAt     DateTime @default(now())
 
   appointment Appointment[]
   barber      Barber?
@@ -29,7 +28,6 @@ model Service {
   duration  Int
   image     String
   show      Boolean  @default(true)
-  createdAt DateTime @default(now())
 
   appointment   Appointment[]
   barberService BarberService[]
@@ -50,7 +48,6 @@ model Salon {
   phoneNumber String   @unique
   city        String
   imgUrl      String
-  createdAt   DateTime @default(now())
 
   barbers       Barber[]
   salonBreaks   SalonBreak[]
@@ -76,7 +73,6 @@ model SalonClosure {
   salonId   String
   startDate DateTime
   endDate   DateTime
-  createdAt DateTime @default(now())
 
   salon Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
 }
@@ -87,7 +83,6 @@ model SalonBreak {
   breakDate DateTime
   startTime String
   endTime   String
-  createdAt DateTime @default(now())
 
   salon Salon @relation(fields: [salonId], references: [id], onDelete: Cascade)
 }
@@ -96,7 +91,6 @@ model Guest {
   id          String   @id @default(cuid())
   name        String
   phoneNumber String
-  createdAt   DateTime @default(now())
 
   appointment Appointment[]
 }
@@ -110,6 +104,7 @@ model Appointment {
   date      DateTime
   startTime String
   endTime   String
+  show      Boolean  @default(true)
 
   client  User?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
   guest   Guest?  @relation(fields: [guestId], references: [id], onDelete: Cascade)
@@ -128,7 +123,6 @@ model Barber {
   pseudo    String
   instagram String
   snapchat  String
-  createdAt DateTime @default(now())
 
   salon          Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -156,7 +150,6 @@ model BarberBreak {
   breakDate DateTime
   startTime String
   endTime   String
-  createdAt DateTime @default(now())
 
   barber Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
 }
@@ -166,7 +159,6 @@ model BarberAbsence {
   barberId  String
   startDate DateTime
   endDate   DateTime
-  createdAt DateTime @default(now())
 
   barber Barber @relation(fields: [barberId], references: [id], onDelete: Cascade)
 }

@@ -18,7 +18,7 @@ app.use(express_1.default.json());
 app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "..", "uploads")));
 app.use("/uploads", uploads_1.default);
 app.get("/", (req, res) => {
-    res.send("Bienvenue sur l'API de Lifestyle Barber");
+    res.json({ "message": "Bienvenue sur l'API de Lifestyle Barber" });
 });
 app.use("/auth", auth_1.default);
 app.use("/services", services_1.default);
