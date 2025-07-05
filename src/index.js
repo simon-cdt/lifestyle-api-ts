@@ -18,7 +18,7 @@ app.use(express_1.default.json());
 app.use("/uploads", express_1.default.static(path_1.default.join(__dirname, "..", "uploads")));
 app.use("/uploads", uploads_1.default);
 app.get("/", (req, res) => {
-    res.json({ "message": "Bienvenue sur l'API de Lifestyle Barber" });
+    res.json({ message: "Bienvenue sur l'API de Lifestyle Barber" });
 });
 app.use("/auth", auth_1.default);
 app.use("/services", services_1.default);
@@ -27,7 +27,7 @@ app.use("/availabilities", availabilities_1.default);
 app.use("/appointments", appointments_1.default);
 app.use("/admin/agenda", agenda_1.default);
 app.use("/admin/notifications", notifications_1.default);
-const PORT = process.env.PORT || 4001;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
     console.log(`http://localhost:${PORT}`);
 });

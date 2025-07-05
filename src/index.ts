@@ -17,7 +17,7 @@ app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 app.use("/uploads", uploadsRouter);
 
 app.get("/", (req, res) => {
-  res.json({"message": "Bienvenue sur l'API de Lifestyle Barber"});
+  res.json({ message: "Bienvenue sur l'API de Lifestyle Barber" });
 });
 
 app.use("/auth", authRouter);
@@ -28,8 +28,7 @@ app.use("/appointments", appointmentRouter);
 app.use("/admin/agenda", agendaRouter);
 app.use("/admin/notifications", notificationsRouter);
 
-
-const PORT = process.env.PORT || 4001;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`http://localhost:${PORT}`);
 });
