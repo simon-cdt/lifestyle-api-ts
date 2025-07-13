@@ -26,7 +26,7 @@ router.post("/login", async (req: Request, res: Response) => {
     if (!existingUser) {
       res.json({
         success: false,
-        message: "L'utilisateur n'existe pas.",
+        message: "L'email ne correspond à aucun utilisateur.",
       });
       return;
     }

@@ -20,7 +20,7 @@ router.post("/", async (req, res) => {
     }
 
     const users = await prisma.user.findMany({
-      where: { AND: [{ id: { in: userIds } }, { pushToken: { not: null } }] },
+      where: { NOT: { pushToken: null } },
       select: { id: true, pushToken: true },
     });
 
