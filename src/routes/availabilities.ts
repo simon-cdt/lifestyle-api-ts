@@ -7,6 +7,7 @@ const router = Router();
 type BarberAvailability = {
   barber: {
     id: string;
+    oneHourSlot: boolean;
     imgUrl: string;
     pseudo: string;
     instagram: string;
@@ -102,6 +103,7 @@ router.post("/", async (req: Request, res: Response) => {
       },
       select: {
         id: true,
+        oneHourSlot: true,
         imgUrl: true,
         pseudo: true,
         instagram: true,
@@ -114,6 +116,7 @@ router.post("/", async (req: Request, res: Response) => {
             serviceId: true,
             price: true,
             studentPrice: true,
+            duration: true,
           },
         },
       },
@@ -201,12 +204,14 @@ router.post("/", async (req: Request, res: Response) => {
         return {
           barber: {
             id: barber.id,
+            oneHourSlot: barber.oneHourSlot,
             imgUrl: barber.imgUrl,
             pseudo: barber.pseudo,
             instagram: barber.instagram,
             snapchat: barber.snapchat,
             price: barber.barberServices[0]?.price || 0,
             studentPrice: barber.barberServices[0]?.studentPrice || 0,
+            duration: barber.barberServices[0]?.duration || 30,
           },
           unavailability,
         };

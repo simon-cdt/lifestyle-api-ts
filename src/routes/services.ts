@@ -9,11 +9,11 @@ router.get("/", async (req: Request, res: Response) => {
       select: {
         id: true,
         type: true,
-        duration: true,
         image: true,
         barberService: {
           select: {
             studentPrice: true,
+            price: true,
           },
         },
       },
@@ -25,11 +25,14 @@ router.get("/", async (req: Request, res: Response) => {
     const formattedServices = services.map((service) => ({
       id: service.id,
       type: service.type,
-      duration: service.duration,
       image: service.image,
       price:
         Array.isArray(service.barberService) && service.barberService.length > 0
-          ? Math.min(...service.barberService.map((bs) => bs.studentPrice))
+          ? Math.min(
+              ...service.barberService.map((bs) =>
+                bs.studentPrice ? bs.studentPrice : bs.price
+              )
+            )
           : null,
     }));
 

@@ -7,15 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model App {
+  version String @id
+}
+
 model User {
-  id            String   @id @default(cuid())
+  id            String  @id @default(cuid())
   firstName     String
   lastName      String
-  email         String   @unique
+  email         String  @unique
   password      String
-  phoneNumber   String   @unique
-  role          Role     @default(CLIENT)
-  isBlackListed Boolean  @default(false)
+  phoneNumber   String  @unique
+  role          Role    @default(CLIENT)
+  isBlackListed Boolean @default(false)
   pushToken     String?
 
   appointment Appointment[]
@@ -23,11 +27,10 @@ model User {
 }
 
 model Service {
-  id        String   @id @default(cuid())
-  type      String
-  duration  Int
-  image     String
-  show      Boolean  @default(true)
+  id    String  @id @default(cuid())
+  type  String
+  image String
+  show  Boolean @default(true)
 
   appointment   Appointment[]
   barberService BarberService[]
@@ -42,10 +45,10 @@ model Day {
 }
 
 model Salon {
-  id          String   @id @default(cuid())
-  name        String   @unique
+  id          String @id @default(cuid())
+  name        String @unique
   address     String
-  phoneNumber String   @unique
+  phoneNumber String @unique
   city        String
   imgUrl      String
 
@@ -88,7 +91,7 @@ model SalonBreak {
 }
 
 model Guest {
-  id          String   @id @default(cuid())
+  id          String @id @default(cuid())
   name        String
   phoneNumber String
 
@@ -116,13 +119,14 @@ model Appointment {
 }
 
 model Barber {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  salonId   String
-  imgUrl    String
-  pseudo    String
-  instagram String
-  snapchat  String
+  id          String  @id @default(cuid())
+  userId      String  @unique
+  salonId     String
+  imgUrl      String
+  pseudo      String
+  instagram   String
+  snapchat    String
+  oneHourSlot Boolean @default(false)
 
   salon          Salon           @relation(fields: [salonId], references: [id], onDelete: Cascade)
   user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -167,8 +171,9 @@ model BarberService {
   id           String @id @default(cuid())
   barberId     String
   serviceId    String
+  duration     Int    @default(30)
   price        Float
-  studentPrice Float
+  studentPrice Float?
 
   barber  Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)

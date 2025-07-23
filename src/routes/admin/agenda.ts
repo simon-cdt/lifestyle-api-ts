@@ -1,6 +1,13 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../../lib/prisma";
-import { format } from "date-fns";
+import {
+  addDays,
+  format,
+  isAfter,
+  isBefore,
+  isEqual,
+  parseISO,
+} from "date-fns";
 import Expo from "expo-server-sdk";
 import { fr } from "date-fns/locale";
 
@@ -426,22 +433,26 @@ router.post("/barberServices", async (req: Request, res: Response) => {
       return;
     }
 
-    const barberServices = await prisma.service.findMany({
+    const barber = await prisma.barber.findUnique({
       where: {
-        barberService: {
-          some: {
-            barberId,
+        id: barberId,
+      },
+      select: {
+        barberServices: {
+          select: {
+            duration: true,
+            service: {
+              select: {
+                id: true,
+                type: true,
+              },
+            },
           },
         },
       },
-      select: {
-        id: true,
-        type: true,
-        duration: true,
-      },
     });
 
-    if (barberServices.length === 0) {
+    if (barber?.barberServices.length === 0) {
       res.json({
         success: false,
         message: "Aucun service disponible pour ce barbier.",
@@ -449,7 +460,15 @@ router.post("/barberServices", async (req: Request, res: Response) => {
       return;
     }
 
-    res.json({ services: barberServices, success: true });
+    const services = barber?.barberServices.map((barberService) => {
+      return {
+        id: barberService.service.id,
+        type: barberService.service.type,
+        duration: barberService.duration,
+      };
+    });
+
+    res.json({ services, success: true });
   } catch (error) {
     console.error(error);
     res.status(400).json({
@@ -552,17 +571,21 @@ router.post("/create-guest", async (req: Request, res: Response) => {
 
 router.post("/create-break", async (req: Request, res: Response) => {
   try {
-    const { barberId, date, startTime, endTime, userId } = req.body;
-
-    const newDate = date + "T00:00:00Z";
+    const {
+      barberId,
+      date,
+      startTime,
+      endTime,
+      userId,
+      oneTime,
+      dateRecurrence,
+    } = req.body;
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: {
-        id: true,
-        role: true,
-      },
+      select: { id: true, role: true },
     });
+
     if (!user || user.role === "CLIENT") {
       res.status(403).json({
         success: false,
@@ -572,19 +595,41 @@ router.post("/create-break", async (req: Request, res: Response) => {
       return;
     }
 
-    await prisma.barberBreak.create({
-      data: {
-        barberId,
-        breakDate: newDate,
-        startTime,
-        endTime,
-      },
-    });
+    if (oneTime) {
+      await prisma.barberBreak.create({
+        data: {
+          barberId,
+          breakDate: date + "T00:00:00Z",
+          startTime,
+          endTime,
+        },
+      });
 
-    res.json({
-      success: true,
-      message: "La pause a été créée avec succès.",
-    });
+      res.json({
+        success: true,
+        message: "La pause a été créée avec succès.",
+      });
+    } else {
+      let dateAdd = date;
+
+      while (!isAfter(dateAdd, dateRecurrence)) {
+        const breakDateStr = format(dateAdd, "yyyy-MM-dd") + "T00:00:00Z";
+
+        await prisma.barberBreak.create({
+          data: {
+            barberId,
+            breakDate: breakDateStr,
+            startTime,
+            endTime,
+          },
+        });
+
+        res.json({
+          success: true,
+          message: "Les pauses ont été créées avec succès.",
+        });
+      }
+    }
   } catch (error) {
     console.error(error);
     res.status(400).json({

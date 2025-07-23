@@ -20,7 +20,6 @@ router.post("/", async (req, res) => {
     }
 
     const users = await prisma.user.findMany({
-      where: { NOT: { pushToken: null } },
       select: { id: true, pushToken: true },
     });
 
@@ -39,7 +38,6 @@ router.post("/", async (req, res) => {
     let messages = [];
     for (const user of users) {
       if (!Expo.isExpoPushToken(user.pushToken)) {
-        console.error(`Le token push n'est pas valide : ${user.pushToken}`);
         continue;
       }
       messages.push({

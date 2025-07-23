@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/simon-cdt/lifestyle-api-ts#readme",
   "dependencies": {
-    "@prisma/client": "^6.7.0",
+    "@prisma/client": "^6.12.0",
     "@types/bcrypt": "^5.0.2",
     "@types/express": "^5.0.1",
     "bcrypt": "^6.0.0",
@@ -29,11 +29,11 @@
     "expo-server-sdk": "^3.15.0",
     "express": "^5.1.0",
     "multer": "^2.0.1",
-    "prisma": "^6.7.0",
     "ts-node-dev": "^2.0.0"
   },
   "devDependencies": {
     "@types/multer": "^1.4.12",
+    "prisma": "^6.12.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }

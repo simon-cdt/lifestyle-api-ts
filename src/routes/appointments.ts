@@ -95,7 +95,6 @@ router.post("/getAllByUserId", async (req: Request, res: Response) => {
           select: {
             id: true,
             type: true,
-            duration: true,
             image: true,
           },
         },
@@ -141,7 +140,6 @@ router.post("/getAllByUserId", async (req: Request, res: Response) => {
         endTime: appointment.endTime,
         serviceId: appointment.service.id,
         serviceType: appointment.service.type,
-        serviceDuration: appointment.service.duration,
         serviceImgUrl: appointment.service.image,
         barberId: appointment.barber.id,
         barberPseudo: appointment.barber.pseudo,
@@ -206,7 +204,6 @@ router.post("/getDetailsById", async (req: Request, res: Response) => {
           select: {
             id: true,
             type: true,
-            duration: true,
           },
         },
       },

@@ -9,6 +9,7 @@ import availabilitiesRouter from "./routes/availabilities";
 import appointmentRouter from "./routes/appointments";
 import agendaRouter from "./routes/admin/agenda";
 import notificationsRouter from "./routes/admin/notifications";
+import appRouter from "./routes/app";
 
 const app = express();
 app.use(express.json());
@@ -20,6 +21,7 @@ app.get("/", (req, res) => {
   res.json({ message: "Bienvenue sur l'API de Lifestyle Barber" });
 });
 
+app.use("/app", appRouter);
 app.use("/auth", authRouter);
 app.use("/services", servicesRouter);
 app.use("/salons", salonsRouter);
