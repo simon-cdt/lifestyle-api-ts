@@ -22,19 +22,27 @@ router.get("/", async (req: Request, res: Response) => {
       },
     });
 
-    const formattedServices = services.map((service) => ({
-      id: service.id,
-      type: service.type,
-      image: service.image,
-      price:
-        Array.isArray(service.barberService) && service.barberService.length > 0
-          ? Math.min(
-              ...service.barberService.map((bs) =>
-                bs.studentPrice ? bs.studentPrice : bs.price
+    const formattedServices = services
+      .map((service) => ({
+        id: service.id,
+        type: service.type,
+        image: service.image,
+        price:
+          Array.isArray(service.barberService) &&
+          service.barberService.length > 0
+            ? Math.min(
+                ...service.barberService.map((bs) =>
+                  bs.studentPrice ? bs.studentPrice : bs.price
+                )
               )
-            )
-          : null,
-    }));
+            : null,
+      }))
+      .slice()
+      .sort((a, b) => {
+        const priceA = a.price ?? Number.POSITIVE_INFINITY;
+        const priceB = b.price ?? Number.POSITIVE_INFINITY;
+        return priceA - priceB;
+      });
 
     if (formattedServices.length === 0) {
       res.json({

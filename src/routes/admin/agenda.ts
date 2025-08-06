@@ -612,7 +612,7 @@ router.post("/create-break", async (req: Request, res: Response) => {
     } else {
       let dateAdd = date;
 
-      while (!isAfter(dateAdd, dateRecurrence)) {
+      while (isAfter(dateAdd, dateRecurrence) === false) {
         const breakDateStr = format(dateAdd, "yyyy-MM-dd") + "T00:00:00Z";
 
         await prisma.barberBreak.create({
@@ -624,11 +624,13 @@ router.post("/create-break", async (req: Request, res: Response) => {
           },
         });
 
-        res.json({
-          success: true,
-          message: "Les pauses ont été créées avec succès.",
-        });
+        dateAdd = addDays(dateAdd, 1);
       }
+
+      res.json({
+        success: true,
+        message: "Les pauses ont été créées avec succès.",
+      });
     }
   } catch (error) {
     console.error(error);
