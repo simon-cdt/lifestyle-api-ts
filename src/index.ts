@@ -10,6 +10,7 @@ import appointmentRouter from "./routes/appointments";
 import agendaRouter from "./routes/admin/agenda";
 import notificationsRouter from "./routes/admin/notifications";
 import appRouter from "./routes/app";
+import clientsRouter from "./routes/admin/clients";
 
 const app = express();
 app.use(express.json());
@@ -29,6 +30,7 @@ app.use("/availabilities", availabilitiesRouter);
 app.use("/appointments", appointmentRouter);
 app.use("/admin/agenda", agendaRouter);
 app.use("/admin/notifications", notificationsRouter);
+app.use("/admin/clients", clientsRouter);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
