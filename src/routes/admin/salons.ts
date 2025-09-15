@@ -77,6 +77,8 @@ router.post(
         return;
       }
 
+      const days = await prisma.day.findMany();
+
       await prisma.salon.create({
         data: {
           name,
@@ -84,6 +86,98 @@ router.post(
           city,
           phoneNumber: phone,
           imgUrl: req.file.filename,
+          salonDays: {
+            createMany: {
+              data: [
+                {
+                  dayId: (() => {
+                    const monday = days.find((day) => day.day === "Monday");
+                    if (!monday) {
+                      throw new Error('Day "Monday" not found');
+                    }
+                    return monday.id;
+                  })(),
+                  openingTime: "08:00",
+                  closingTime: "18:00",
+                  isOpen: true,
+                },
+                {
+                  dayId: (() => {
+                    const tuesday = days.find((day) => day.day === "Tuesday");
+                    if (!tuesday) {
+                      throw new Error('Day "Tuesday" not found');
+                    }
+                    return tuesday.id;
+                  })(),
+                  openingTime: "08:00",
+                  closingTime: "18:00",
+                  isOpen: true,
+                },
+                {
+                  dayId: (() => {
+                    const wednesday = days.find(
+                      (day) => day.day === "Wednesday"
+                    );
+                    if (!wednesday) {
+                      throw new Error('Day "Wednesday" not found');
+                    }
+                    return wednesday.id;
+                  })(),
+                  openingTime: "08:00",
+                  closingTime: "18:00",
+                  isOpen: true,
+                },
+                {
+                  dayId: (() => {
+                    const thursday = days.find((day) => day.day === "Thursday");
+                    if (!thursday) {
+                      throw new Error('Day "Thursday" not found');
+                    }
+                    return thursday.id;
+                  })(),
+                  openingTime: "08:00",
+                  closingTime: "18:00",
+                  isOpen: true,
+                },
+                {
+                  dayId: (() => {
+                    const friday = days.find((day) => day.day === "Friday");
+                    if (!friday) {
+                      throw new Error('Day "Friday" not found');
+                    }
+                    return friday.id;
+                  })(),
+                  openingTime: "08:00",
+                  closingTime: "18:00",
+                  isOpen: true,
+                },
+                {
+                  dayId: (() => {
+                    const saturday = days.find((day) => day.day === "Saturday");
+                    if (!saturday) {
+                      throw new Error('Day "Saturday" not found');
+                    }
+                    return saturday.id;
+                  })(),
+                  openingTime: "10:00",
+                  closingTime: "16:00",
+                  isOpen: true,
+                },
+                {
+                  dayId: (() => {
+                    const sunday = days.find((day) => day.day === "Sunday");
+                    if (!sunday) {
+                      throw new Error('Day "Sunday" not found');
+                    }
+                    return sunday.id;
+                  })(),
+                  openingTime: "00:00",
+                  closingTime: "00:00",
+                  isOpen: false,
+                },
+              ],
+            },
+          },
         },
       });
 
