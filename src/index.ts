@@ -12,6 +12,7 @@ import agendaRouter from "./routes/admin/agenda";
 import notificationsRouter from "./routes/admin/notifications";
 import clientsRouter from "./routes/admin/clients";
 import barbersRouter from "./routes/admin/barbers";
+import salonsBarber from "./routes/admin/salons";
 
 const app = express();
 app.use(express.json());
@@ -33,6 +34,7 @@ app.use("/admin/agenda", agendaRouter);
 app.use("/admin/notifications", notificationsRouter);
 app.use("/admin/clients", clientsRouter);
 app.use("/admin/barbers", barbersRouter);
+app.use("/admin/salons", salonsBarber);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
