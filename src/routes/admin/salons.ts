@@ -537,4 +537,206 @@ router.put("/update", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/add-break", async (req: Request, res: Response) => {
+  try {
+    const { userId, salonId, date, startTime, endTime } = req.body;
+
+    if (!userId || !salonId || !date || !startTime || !endTime) {
+      res.status(400).json({
+        message: "Tous les champs obligatoires doivent être remplis.",
+      });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const salon = await prisma.salon.findUnique({
+      where: { id: salonId },
+    });
+    if (!salon) {
+      res.status(404).json({
+        success: false,
+        message: "Salon non trouvé.",
+      });
+      return;
+    }
+
+    const newDate = date + "T00:00:00Z";
+
+    await prisma.salonBreak.create({
+      data: {
+        salonId,
+        breakDate: newDate,
+        startTime,
+        endTime,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "La pause a été ajoutée avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.post("/add-salon-closure", async (req: Request, res: Response) => {
+  try {
+    const { userId, salonId, startDate, endDate } = req.body;
+
+    if (!userId || !salonId || !startDate || !endDate) {
+      res.status(400).json({
+        message: "Tous les champs obligatoires doivent être remplis.",
+      });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const salon = await prisma.salon.findUnique({
+      where: { id: salonId },
+    });
+    if (!salon) {
+      res.status(404).json({
+        success: false,
+        message: "Salon non trouvé.",
+      });
+      return;
+    }
+
+    const newStartDate = startDate + "T00:00:00Z";
+    const newEndDate = endDate + "T00:00:00Z";
+
+    await prisma.salonClosure.create({
+      data: {
+        salonId,
+        startDate: newStartDate,
+        endDate: newEndDate,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "La fermeture du salon a été ajoutée avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.delete("/delete", async (req: Request, res: Response) => {
+  try {
+    const { userId, salonId } = req.body;
+
+    if (!userId || !salonId) {
+      res.status(400).json({
+        message: "Tous les champs obligatoires doivent être remplis.",
+      });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const salon = await prisma.salon.findUnique({
+      where: { id: salonId },
+    });
+    if (!salon) {
+      res.status(404).json({
+        success: false,
+        message: "Salon non trouvé.",
+      });
+      return;
+    }
+
+    await prisma.salonBreak.deleteMany({
+      where: { salonId },
+    });
+    await prisma.salonClosure.deleteMany({
+      where: { salonId },
+    });
+    await prisma.salonDay.deleteMany({
+      where: { salonId },
+    });
+
+    const barbers = await prisma.barber.findMany({
+      where: { salonId },
+      select: { id: true },
+    });
+    const barberIds = barbers.map((barber) => barber.id);
+
+    await prisma.appointment.deleteMany({
+      where: { barberId: { in: barberIds } },
+    });
+    await prisma.barberAbsence.deleteMany({
+      where: { barberId: { in: barberIds } },
+    });
+    await prisma.barberBreak.deleteMany({
+      where: { barberId: { in: barberIds } },
+    });
+    await prisma.barberDay.deleteMany({
+      where: { barberId: { in: barberIds } },
+    });
+    await prisma.barberService.deleteMany({
+      where: { barberId: { in: barberIds } },
+    });
+    await prisma.barber.deleteMany({
+      where: { salonId },
+    });
+
+    await prisma.salon.delete({
+      where: { id: salonId },
+    });
+
+    res.json({
+      success: true,
+      message: "Le salon a été supprimé avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
 export default router;
