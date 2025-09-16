@@ -434,4 +434,107 @@ router.put("/hours", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/informations", async (req: Request, res: Response) => {
+  try {
+    const { userId, salonId } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const salon = await prisma.salon.findUnique({
+      where: { id: salonId },
+      select: {
+        id: true,
+        name: true,
+        address: true,
+        phoneNumber: true,
+        city: true,
+      },
+    });
+
+    if (!salon) {
+      res.json({
+        success: false,
+        message: "Aucun salon disponible.",
+      });
+      return;
+    }
+
+    res.json(salon);
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.put("/update", async (req: Request, res: Response) => {
+  try {
+    const { salonId, name, address, phone, city, userId } = req.body;
+
+    if (!salonId || !name || !address || !phone || !city) {
+      res.status(400).json({
+        message: "Tous les champs obligatoires doivent être remplis.",
+      });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const salon = await prisma.salon.findUnique({
+      where: { id: salonId },
+    });
+    if (!salon) {
+      res.status(404).json({
+        success: false,
+        message: "Salon non trouvé.",
+      });
+      return;
+    }
+
+    await prisma.salon.update({
+      where: { id: salonId },
+      data: {
+        name,
+        address,
+        phoneNumber: phone,
+        city,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Les informations du salon ont été mises à jour avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
 export default router;
