@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../../lib/prisma";
 import { upload } from "../../middleware/multerSalon";
+import path from "path";
+import fs from "fs/promises";
 
 const router = Router();
 
@@ -678,6 +680,7 @@ router.delete("/delete", async (req: Request, res: Response) => {
 
     const salon = await prisma.salon.findUnique({
       where: { id: salonId },
+      select: { id: true, imgUrl: true },
     });
     if (!salon) {
       res.status(404).json({
@@ -722,6 +725,17 @@ router.delete("/delete", async (req: Request, res: Response) => {
       where: { salonId },
     });
 
+    const filePath = path.join(
+      __dirname,
+      "../../../uploads/salons/",
+      salon.imgUrl
+    );
+    try {
+      await fs.unlink(filePath);
+    } catch (err) {
+      console.warn("Fichier déjà supprimé ou introuvable :", filePath);
+    }
+
     await prisma.salon.delete({
       where: { id: salonId },
     });
@@ -738,5 +752,74 @@ router.delete("/delete", async (req: Request, res: Response) => {
     });
   }
 });
+
+router.put(
+  "/editImg",
+  upload.single("image"),
+  async (req: Request, res: Response) => {
+    try {
+      const { userId, salonId } = req.body;
+
+      if (!userId || !salonId || !req.file) {
+        res.status(400).json({
+          message: "Tous les champs obligatoires doivent être remplis.",
+        });
+        return;
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+
+      if (!user || user.role !== "ADMIN") {
+        res.status(403).json({
+          success: false,
+          message: "Accès refusé.",
+        });
+        return;
+      }
+
+      const salon = await prisma.salon.findUnique({
+        where: { id: salonId },
+        select: { imgUrl: true },
+      });
+      if (!salon) {
+        res.status(404).json({
+          success: false,
+          message: "Salon non trouvé.",
+        });
+        return;
+      }
+
+      const oldFilePath = path.join(
+        __dirname,
+        "../../../uploads/salons/",
+        salon.imgUrl
+      );
+      try {
+        await fs.unlink(oldFilePath);
+      } catch (err) {
+        console.warn("Fichier déjà supprimé ou introuvable :", oldFilePath);
+      }
+
+      await prisma.salon.update({
+        where: { id: salonId },
+        data: { imgUrl: req.file.filename },
+      });
+
+      res.json({
+        success: true,
+        message: "Le salon a été ajouté avec succès.",
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(400).json({
+        success: false,
+        message: "Une erreur est survenue.",
+      });
+    }
+  }
+);
 
 export default router;
