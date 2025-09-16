@@ -1,6 +1,8 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../../lib/prisma";
 import { upload } from "../../middleware/multerBarber";
+import path from "path";
+import fs from "fs/promises";
 
 const router = Router();
 
@@ -219,5 +221,212 @@ router.post(
     }
   }
 );
+
+router.post("/", async (req: Request, res: Response) => {
+  try {
+    const { userId } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const barbers = await prisma.barber.findMany({
+      select: {
+        id: true,
+        pseudo: true,
+        imgUrl: true,
+        salon: {
+          select: {
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (barbers.length === 0) {
+      res.json({
+        success: false,
+        message: "Aucun barbier trouvé.",
+      });
+      return;
+    }
+
+    res.json(barbers);
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.put(
+  "/editImg",
+  upload.single("image"),
+  async (req: Request, res: Response) => {
+    try {
+      const { userId, barberId } = req.body;
+
+      if (!userId || !barberId || !req.file) {
+        res.status(400).json({
+          message: "Tous les champs obligatoires doivent être remplis.",
+        });
+        return;
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+
+      if (!user || user.role !== "ADMIN") {
+        res.status(403).json({
+          success: false,
+          message: "Accès refusé.",
+        });
+        return;
+      }
+
+      const barber = await prisma.barber.findUnique({
+        where: { id: barberId },
+        select: { imgUrl: true },
+      });
+      if (!barber) {
+        res.status(404).json({
+          success: false,
+          message: "Barber non trouvé.",
+        });
+        return;
+      }
+
+      const oldFilePath = path.join(
+        __dirname,
+        "../../../uploads/barbers/",
+        barber.imgUrl
+      );
+      try {
+        await fs.unlink(oldFilePath);
+      } catch (err) {
+        console.warn("Fichier déjà supprimé ou introuvable :", oldFilePath);
+      }
+
+      await prisma.barber.update({
+        where: { id: barberId },
+        data: { imgUrl: req.file.filename },
+      });
+
+      res.json({
+        success: true,
+        message: "Le barbier a été mis à jour avec succès.",
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(400).json({
+        success: false,
+        message: "Une erreur est survenue.",
+      });
+    }
+  }
+);
+
+router.delete("/delete", async (req: Request, res: Response) => {
+  try {
+    const { userId, barberId } = req.body;
+
+    if (!userId || !barberId) {
+      res.status(400).json({
+        message: "Tous les champs obligatoires doivent être remplis.",
+      });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const barber = await prisma.barber.findUnique({
+      where: { id: barberId },
+      select: { id: true, imgUrl: true },
+    });
+    if (!barber) {
+      res.status(404).json({
+        success: false,
+        message: "Barber non trouvé.",
+      });
+      return;
+    }
+
+    await prisma.barberBreak.deleteMany({
+      where: { barberId: barberId },
+    });
+    await prisma.barberAbsence.deleteMany({
+      where: { barberId: barberId },
+    });
+    await prisma.barberDay.deleteMany({
+      where: { barberId: barberId },
+    });
+
+    await prisma.appointment.deleteMany({
+      where: { barberId: barberId },
+    });
+    await prisma.barberService.deleteMany({
+      where: { barberId: barberId },
+    });
+
+    const client = await prisma.barber.findUnique({
+      where: { id: barberId },
+      select: { userId: true },
+    });
+
+    await prisma.user.update({
+      where: { id: client?.userId },
+      data: { role: "CLIENT" },
+    });
+
+    const filePath = path.join(
+      __dirname,
+      "../../../uploads/barbers/",
+      barber.imgUrl
+    );
+    try {
+      await fs.unlink(filePath);
+    } catch (err) {
+      console.warn("Fichier déjà supprimé ou introuvable :", filePath);
+    }
+
+    await prisma.barber.delete({
+      where: { id: barberId },
+    });
+
+    res.json({
+      success: true,
+      message: "Le barber a été supprimé avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
 
 export default router;
