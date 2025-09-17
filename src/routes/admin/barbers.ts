@@ -666,4 +666,235 @@ router.delete("/service-delete", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/absence-add", async (req: Request, res: Response) => {
+  try {
+    const { userId, barberId, startDate, endDate } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const startDateFormat = startDate + "T00:00:00Z";
+    const endDateFormat = endDate + "T00:00:00Z";
+
+    await prisma.barberAbsence.create({
+      data: {
+        barberId: barberId,
+        startDate: startDateFormat,
+        endDate: endDateFormat,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Absence ajoutée au barbier avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.post("/info", async (req: Request, res: Response) => {
+  try {
+    const { userId, barberId } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const barber = await prisma.barber.findUnique({
+      where: { id: barberId },
+      select: {
+        id: true,
+        pseudo: true,
+        instagram: true,
+        snapchat: true,
+        salon: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        barberDays: {
+          select: {
+            isWorking: true,
+            day: {
+              select: {
+                id: true,
+                day: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!barber) {
+      res.status(404).json({
+        success: false,
+        message: "Barber non trouvé.",
+      });
+      return;
+    }
+
+    const barberFormat = {
+      ...barber,
+      isWorkingMonday: barber.barberDays.some(
+        (d) => d.day.day === "Monday" && d.isWorking
+      ),
+      isWorkingTuesday: barber.barberDays.some(
+        (d) => d.day.day === "Tuesday" && d.isWorking
+      ),
+      isWorkingWednesday: barber.barberDays.some(
+        (d) => d.day.day === "Wednesday" && d.isWorking
+      ),
+      isWorkingThursday: barber.barberDays.some(
+        (d) => d.day.day === "Thursday" && d.isWorking
+      ),
+      isWorkingFriday: barber.barberDays.some(
+        (d) => d.day.day === "Friday" && d.isWorking
+      ),
+      isWorkingSaturday: barber.barberDays.some(
+        (d) => d.day.day === "Saturday" && d.isWorking
+      ),
+      isWorkingSunday: barber.barberDays.some(
+        (d) => d.day.day === "Sunday" && d.isWorking
+      ),
+    };
+
+    const salons = await prisma.salon.findMany({
+      select: {
+        id: true,
+        name: true,
+      },
+    });
+
+    const { barberDays, ...barberWithoutDays } = barberFormat;
+
+    res.json({ barber: barberWithoutDays, salons });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.put("/update", async (req: Request, res: Response) => {
+  try {
+    const {
+      userId,
+      barberId,
+      salonId,
+      pseudo,
+      instagram,
+      snapchat,
+      isWorkingMonday,
+      isWorkingTuesday,
+      isWorkingWednesday,
+      isWorkingThursday,
+      isWorkingFriday,
+      isWorkingSaturday,
+      isWorkingSunday,
+    } = req.body;
+
+    if (!userId || !barberId || !salonId || !pseudo) {
+      res.status(400).json({
+        message: "Tous les champs obligatoires doivent être remplis.",
+      });
+      return;
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const days = await prisma.day.findMany();
+
+    await prisma.barber.update({
+      where: { id: barberId },
+      data: {
+        salonId,
+        pseudo,
+        instagram,
+        snapchat,
+        barberDays: {
+          updateMany: [
+            {
+              where: { dayId: days.find((d) => d.day === "Monday")?.id },
+              data: { isWorking: isWorkingMonday },
+            },
+            {
+              where: { dayId: days.find((d) => d.day === "Tuesday")?.id },
+              data: { isWorking: isWorkingTuesday },
+            },
+            {
+              where: { dayId: days.find((d) => d.day === "Wednesday")?.id },
+              data: { isWorking: isWorkingWednesday },
+            },
+            {
+              where: { dayId: days.find((d) => d.day === "Thursday")?.id },
+              data: { isWorking: isWorkingThursday },
+            },
+            {
+              where: { dayId: days.find((d) => d.day === "Friday")?.id },
+              data: { isWorking: isWorkingFriday },
+            },
+            {
+              where: { dayId: days.find((d) => d.day === "Saturday")?.id },
+              data: { isWorking: isWorkingSaturday },
+            },
+            {
+              where: { dayId: days.find((d) => d.day === "Sunday")?.id },
+              data: { isWorking: isWorkingSunday },
+            },
+          ],
+        },
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Barber mis à jour avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
 export default router;
