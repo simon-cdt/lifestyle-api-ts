@@ -429,4 +429,241 @@ router.delete("/delete", async (req: Request, res: Response) => {
   }
 });
 
+router.post("/services", async (req: Request, res: Response) => {
+  try {
+    const { userId, barberId } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const servicesBarber = await prisma.barberService.findMany({
+      where: { barberId: barberId },
+      select: {
+        id: true,
+        price: true,
+        studentPrice: true,
+        duration: true,
+        service: {
+          select: { type: true, id: true },
+        },
+      },
+    });
+
+    const rest = await prisma.service.findMany({
+      where: { NOT: { barberService: { some: { barberId: barberId } } } },
+      select: {
+        id: true,
+        type: true,
+      },
+    });
+
+    const services = await prisma.service.findMany({
+      where: { barberService: { some: { barberId: barberId } } },
+      select: {
+        id: true,
+        type: true,
+        show: true,
+        barberService: {
+          where: { barberId: barberId },
+          select: {
+            barberId: true,
+            id: true,
+            price: true,
+            studentPrice: true,
+            duration: true,
+          },
+        },
+      },
+    });
+
+    res.json({ services, rest });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.post("/service-add", async (req: Request, res: Response) => {
+  try {
+    const { userId, barberId, duration, price, studentPrice, serviceId } =
+      req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    await prisma.barberService.create({
+      data: {
+        barberId: barberId,
+        serviceId: serviceId,
+        duration: parseInt(duration, 10),
+        price: price,
+        studentPrice: studentPrice,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Service ajouté au barbier avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.post("/service", async (req: Request, res: Response) => {
+  try {
+    const { userId, serviceBarberId } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const barberService = await prisma.barberService.findUnique({
+      where: { id: serviceBarberId },
+      select: {
+        id: true,
+        price: true,
+        studentPrice: true,
+        duration: true,
+        barberId: true,
+      },
+    });
+
+    if (!barberService) {
+      res.status(404).json({
+        success: false,
+        message: "Service du barbier non trouvé.",
+      });
+      return;
+    }
+
+    res.json(barberService);
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.put("/service-update", async (req: Request, res: Response) => {
+  try {
+    const { userId, serviceBarberId, duration, price, studentPrice } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    await prisma.barberService.update({
+      where: { id: serviceBarberId },
+      data: {
+        duration: parseInt(duration, 10),
+        price: price,
+        studentPrice: studentPrice,
+      },
+    });
+
+    res.json({
+      success: true,
+      message: "Service du barbier mis à jour avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
+router.delete("/service-delete", async (req: Request, res: Response) => {
+  try {
+    const { userId, serviceBarberId } = req.body;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user || user.role !== "ADMIN") {
+      res.status(403).json({
+        success: false,
+        message: "Accès refusé.",
+      });
+      return;
+    }
+
+    const service = await prisma.barberService.findUnique({
+      where: { id: serviceBarberId },
+      select: { serviceId: true, barberId: true },
+    });
+
+    await prisma.appointment.deleteMany({
+      where: {
+        barberId: service?.barberId,
+        serviceId: service?.serviceId,
+      },
+    });
+
+    await prisma.barberService.delete({
+      where: { id: serviceBarberId },
+    });
+
+    res.json({
+      success: true,
+      message: "Service du barbier supprimé avec succès.",
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(400).json({
+      success: false,
+      message: "Une erreur est survenue.",
+    });
+  }
+});
+
 export default router;
