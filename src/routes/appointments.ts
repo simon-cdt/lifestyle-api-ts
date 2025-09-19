@@ -131,16 +131,16 @@ router.post("/getAllByUserId", async (req: Request, res: Response) => {
     const formattedAppointments = appointments.map((appointment) => {
       const service = appointment.service;
       const barberService = appointment.barber.barberServices.find(
-        (bs) => bs.serviceId === service.id
+        (bs) => bs.serviceId === service?.id
       );
       return {
         id: appointment.id,
         date: appointment.date,
         startTime: appointment.startTime,
         endTime: appointment.endTime,
-        serviceId: appointment.service.id,
-        serviceType: appointment.service.type,
-        serviceImgUrl: appointment.service.image,
+        serviceId: appointment.service?.id,
+        serviceType: appointment.service?.type,
+        serviceImgUrl: appointment.service?.image,
         barberId: appointment.barber.id,
         barberPseudo: appointment.barber.pseudo,
         barberImgUrl: appointment.barber.imgUrl,
@@ -210,7 +210,7 @@ router.post("/getDetailsById", async (req: Request, res: Response) => {
     });
 
     if (appointment) {
-      const serviceId = appointment.service.id;
+      const serviceId = appointment.service?.id;
       const barberService = appointment.barber.barberServices.find(
         (bs) => bs.serviceId === serviceId
       );

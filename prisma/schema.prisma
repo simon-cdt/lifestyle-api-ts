@@ -11,6 +11,16 @@ model App {
   version String @id
 }
 
+model Notification {
+  id        String   @id @default(cuid())
+  title     String
+  message   String
+  everyone  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  userNotifications UserNotification[]
+}
+
 model User {
   id            String  @id @default(cuid())
   firstName     String
@@ -22,8 +32,9 @@ model User {
   isBlackListed Boolean @default(false)
   pushToken     String?
 
-  appointment Appointment[]
-  barber      Barber?
+  appointment   Appointment[]
+  barber        Barber?
+  notifications UserNotification[]
 }
 
 model Service {
@@ -48,7 +59,7 @@ model Salon {
   id          String @id @default(cuid())
   name        String @unique
   address     String
-  phoneNumber String @unique
+  phoneNumber String
   city        String
   imgUrl      String
 
@@ -103,16 +114,17 @@ model Appointment {
   clientId  String?
   guestId   String?
   barberId  String
-  serviceId String
+  serviceId String?
   date      DateTime
   startTime String
   endTime   String
   show      Boolean  @default(true)
+  custom    String?
 
-  client  User?   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  guest   Guest?  @relation(fields: [guestId], references: [id], onDelete: Cascade)
-  barber  Barber  @relation(fields: [barberId], references: [id], onDelete: Cascade)
-  service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  client  User?    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  guest   Guest?   @relation(fields: [guestId], references: [id], onDelete: Cascade)
+  barber  Barber   @relation(fields: [barberId], references: [id], onDelete: Cascade)
+  service Service? @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@unique([barberId, date, startTime])
   @@unique([barberId, date, endTime])
@@ -179,6 +191,17 @@ model BarberService {
   service Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
 
   @@unique([barberId, serviceId])
+}
+
+model UserNotification {
+  id             String @id @default(cuid())
+  userId         String
+  notificationId String
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, notificationId])
 }
 
 enum Role {

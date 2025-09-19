@@ -1,13 +1,14 @@
 import { Router, Request, Response } from "express";
 import { prisma } from "../../lib/prisma";
 import Expo from "expo-server-sdk";
+import { format } from "date-fns";
 
 const router = Router();
 
 const expo = new Expo();
 
 router.post("/send", async (req, res) => {
-  const { userIds, title, body, userId } = req.body;
+  const { userIds, title, body, userId, everyone } = req.body;
 
   try {
     const user = await prisma.user.findUnique({
@@ -59,6 +60,33 @@ router.post("/send", async (req, res) => {
       } catch (error) {
         console.error("Erreur lors de l'envoi des notifications :", error);
       }
+    }
+
+    const date = format(new Date(), "yyyy-MM-dd") + "T00:00:00Z";
+
+    if (everyone) {
+      await prisma.notification.create({
+        data: {
+          title,
+          message: body,
+          everyone: true,
+          createdAt: date,
+        },
+      });
+    } else {
+      await prisma.notification.create({
+        data: {
+          title,
+          message: body,
+          userNotifications: {
+            createMany: {
+              data: users.map((user) => ({ userId: user.id })),
+            },
+          },
+          everyone: false,
+          createdAt: date,
+        },
+      });
     }
 
     res.status(200).json({

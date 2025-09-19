@@ -170,6 +170,7 @@ router.post("/", async (req: Request, res: Response) => {
           id: string;
           clientName?: string;
           serviceType?: string;
+          custom?: string;
         }[] = [];
 
         const appointments = await prisma.appointment.findMany({
@@ -188,6 +189,7 @@ router.post("/", async (req: Request, res: Response) => {
             service: {
               select: { type: true },
             },
+            custom: true,
           },
         });
 
@@ -198,7 +200,8 @@ router.post("/", async (req: Request, res: Response) => {
             appointment: true,
             id: app.id,
             clientName: app.client ? app.client.firstName : app.guest?.name,
-            serviceType: app.service.type,
+            serviceType: app.service?.type,
+            custom: app.custom || undefined,
           });
         });
 
@@ -325,6 +328,7 @@ router.post("/info", async (req: Request, res: Response) => {
               type: true,
             },
           },
+          custom: true,
           client: {
             select: {
               firstName: true,
@@ -489,6 +493,8 @@ router.post("/create-guest", async (req: Request, res: Response) => {
       startTime,
       endTime,
       userId,
+      customServiceName,
+      custom,
     } = req.body;
 
     const newDate = date + "T00:00:00Z";
@@ -545,16 +551,29 @@ router.post("/create-guest", async (req: Request, res: Response) => {
       },
     });
 
-    await prisma.appointment.create({
-      data: {
-        guestId: newGuest.id,
-        barberId,
-        serviceId,
-        date: newDate,
-        startTime,
-        endTime,
-      },
-    });
+    if (custom && customServiceName) {
+      await prisma.appointment.create({
+        data: {
+          guestId: newGuest.id,
+          barberId,
+          date: newDate,
+          startTime,
+          endTime,
+          custom: customServiceName || false,
+        },
+      });
+    } else {
+      await prisma.appointment.create({
+        data: {
+          guestId: newGuest.id,
+          barberId,
+          serviceId,
+          date: newDate,
+          startTime,
+          endTime,
+        },
+      });
+    }
 
     res.json({
       success: true,
@@ -718,6 +737,7 @@ router.delete("/delete-appointment", async (req: Request, res: Response) => {
         endTime: true,
         client: {
           select: {
+            id: true,
             pushToken: true,
             firstName: true,
           },
@@ -738,6 +758,28 @@ router.delete("/delete-appointment", async (req: Request, res: Response) => {
     });
 
     if (appointmentToDelete.client?.pushToken) {
+      await prisma.notification.create({
+        data: {
+          title: "Rendez-vous annulé",
+          message: `Bonjour ${
+            appointmentToDelete.client?.firstName
+          }, votre rendez-vous prévu le ${format(
+            appointmentToDelete.date,
+            "PPPP",
+            { locale: fr }
+          )} entre ${appointmentToDelete.startTime} et ${
+            appointmentToDelete.endTime
+          } a été annulé.`,
+          userNotifications: {
+            create: {
+              userId: appointmentToDelete.client.id,
+            },
+          },
+          createdAt: format(new Date(), "yyyy-MM-dd") + "T00:00:00Z",
+          everyone: false,
+        },
+      });
+
       const notification = {
         to: appointmentToDelete.client.pushToken,
         sound: "default",

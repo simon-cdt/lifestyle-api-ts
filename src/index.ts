@@ -8,11 +8,13 @@ import uploadsRouter from "./routes/uploads";
 import salonsRouter from "./routes/salons";
 import availabilitiesRouter from "./routes/availabilities";
 import appointmentRouter from "./routes/appointments";
+import notificationsRouter from "./routes/notifications";
 import agendaRouter from "./routes/admin/agenda";
-import notificationsRouter from "./routes/admin/notifications";
-import clientsRouter from "./routes/admin/clients";
-import barbersRouter from "./routes/admin/barbers";
-import salonsBarber from "./routes/admin/salons";
+import notificationsAdminRouter from "./routes/admin/notifications";
+import clientsAdminRouter from "./routes/admin/clients";
+import barbersAdminRouter from "./routes/admin/barbers";
+import salonsAdminRouter from "./routes/admin/salons";
+import servicesAdminRouter from "./routes/admin/services";
 
 const app = express();
 app.use(express.json());
@@ -30,11 +32,13 @@ app.use("/services", servicesRouter);
 app.use("/salons", salonsRouter);
 app.use("/availabilities", availabilitiesRouter);
 app.use("/appointments", appointmentRouter);
+app.use("/notifications", notificationsRouter);
 app.use("/admin/agenda", agendaRouter);
-app.use("/admin/notifications", notificationsRouter);
-app.use("/admin/clients", clientsRouter);
-app.use("/admin/barbers", barbersRouter);
-app.use("/admin/salons", salonsBarber);
+app.use("/admin/notifications", notificationsAdminRouter);
+app.use("/admin/clients", clientsAdminRouter);
+app.use("/admin/barbers", barbersAdminRouter);
+app.use("/admin/salons", salonsAdminRouter);
+app.use("/admin/services", servicesAdminRouter);
 
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
