@@ -67,6 +67,7 @@ router.post(
         isOpenFriday,
         isOpenSaturday,
         isOpenSunday,
+        oneHourSlot,
       } = req.body;
 
       if (!userId || !clientId || !salonId || !pseudo || !req.file) {
@@ -127,6 +128,7 @@ router.post(
           snapchat,
           pseudo,
           imgUrl: req.file.filename,
+          oneHourSlot: toBool(oneHourSlot),
           barberDays: {
             createMany: {
               data: [
@@ -730,6 +732,7 @@ router.post("/info", async (req: Request, res: Response) => {
         pseudo: true,
         instagram: true,
         snapchat: true,
+        oneHourSlot: true,
         salon: {
           select: {
             id: true,
@@ -818,6 +821,7 @@ router.put("/update", async (req: Request, res: Response) => {
       isWorkingFriday,
       isWorkingSaturday,
       isWorkingSunday,
+      oneHourSlot,
     } = req.body;
 
     if (!userId || !barberId || !salonId || !pseudo) {
@@ -849,6 +853,7 @@ router.put("/update", async (req: Request, res: Response) => {
         pseudo,
         instagram,
         snapchat,
+        oneHourSlot: oneHourSlot,
         barberDays: {
           updateMany: [
             {
