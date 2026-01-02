@@ -11,7 +11,18 @@ router.get("/", async (req: Request, res: Response) => {
       },
     });
 
-    res.json(version);
+    const phoneNumber = await prisma.salon.findFirst({
+      select: {
+        phoneNumber: true,
+      },
+    });
+
+    const obj = {
+      version: version?.version || "1.0.0",
+      phoneNumber: phoneNumber?.phoneNumber || null,
+    };
+
+    res.json(obj);
   } catch (error) {
     console.error(error);
     res.status(400).json({
